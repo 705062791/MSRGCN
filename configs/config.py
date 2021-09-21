@@ -34,7 +34,7 @@ class Config():
         self.seq_len = input_n + output_n
         self.dct_n = dct_n
         if self.output_n == 25:
-            self.frame_ids = [1, 3, 7, 9, 13, 24]
+            self.frame_ids = [1, 3, 7, 9, 13, 17, 21, 24]
         elif self.output_n == 10:
             self.frame_ids = [1, 3, 7, 9]
 
@@ -130,9 +130,9 @@ class Config():
             os.makedirs(os.path.join(self.ckpt_dir, "images"))
 
         if self.exp_name == "h36m":
-            self.base_data_dir = os.path.join("F:\model_report_data\mocap_motion_prediction\data\human36mData3D\others", "h3.6m\dataset")
+            self.base_data_dir = os.path.join("/mnt/hdd4T/mtz_home/data/dataset/")
         elif self.exp_name == "cmu":
-            self.base_data_dir = os.path.join("F:\model_report_data\mocap_motion_prediction", "data\cmu")
+            self.base_data_dir = os.path.join("/mnt/hdd4T/mtz_home/data/cmu_mocap")
 
 
 
