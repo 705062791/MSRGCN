@@ -564,7 +564,7 @@ def expmap2quat_torch(exp):
     return q
 
 
-def expmap2rotmat_torch(r, device="cuda:0"):
+def expmap2rotmat_torch(r, device="cuda:1"):
     """
     Converts expmap matrix to rotation
     batch pytorch version ported from the corresponding method above
