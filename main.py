@@ -91,6 +91,7 @@ if args.is_load:
 if args.is_train:
     r.run()
 else:
+
     errs = r.test()
 
     col = r.cfg.frame_ids
