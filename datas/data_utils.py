@@ -767,17 +767,16 @@ def load_data_3d(path_to_dataset, subjects, actions, sample_rate, seq_len, devic
                 the_seq2[:, 0:6] = 0
                 p3d2 = expmap2xyz_torch(the_seq2)
                 the_sequence2 = p3d2.view(num_frames2, -1).cpu().data.numpy()
-
-                if test_manner == "all":
-                    # # 全部数据用来测试
-                    fs_sel1 = [np.arange(i, i + seq_len) for i in range(num_frames1 - 100)]
-                    fs_sel2 = [np.arange(i, i + seq_len) for i in range(num_frames2 - 100)]
+                # if test_manner == "all":
+                #     # # 全部数据用来测试
+                #     fs_sel1 = [np.arange(i, i + seq_len) for i in range(num_frames1 - 100)]
+                #     fs_sel2 = [np.arange(i, i + seq_len) for i in range(num_frames2 - 100)]
                 if test_manner == "256":
-                    # 随机取 8 个
+                    # 随机取 256 个
                     fs_sel1, fs_sel2 = find_indices_srnn(num_frames1, num_frames2, seq_len, 256)
-                if test_manner == "8":
-                    # 随机取 8 个
-                    fs_sel1, fs_sel2 = find_indices_srnn(num_frames1, num_frames2, seq_len, 8)
+                # if test_manner == "8":
+                #     # 随机取 8 个
+                #     fs_sel1, fs_sel2 = find_indices_srnn(num_frames1, num_frames2, seq_len, 8)
 
                 seq_sel1 = the_sequence1[fs_sel1, :]
                 seq_sel2 = the_sequence2[fs_sel2, :]

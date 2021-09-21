@@ -89,6 +89,7 @@ class H36MRunner():
             self.dct_m = self.dct_m.cuda(self.cfg.device, non_blocking=True)
             self.i_dct_m = self.i_dct_m.cuda(self.cfg.device, non_blocking=True)
 
+
         train_dataset = H36MMotionDataset(self.cfg.base_data_dir, actions="all", mode_name="train", input_n=self.cfg.input_n, output_n=self.cfg.output_n,
                                       dct_used=self.cfg.dct_n, split=0, sample_rate=2,
                                           down_key=[('p22', 'p12', self.cfg.Index2212),
