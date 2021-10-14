@@ -443,12 +443,12 @@ def load_data_cmu_3d(path_to_dataset, actions, input_n, output_n, sample_rate=2,
                     complete_seq = np.append(complete_seq, the_sequence, axis=0)
 
             # 测试集 随机挑选 8
-            elif test_manner == "8":
+            elif not test_manner == "all":
                 # 水滴测试
                 source_seq_len = 50
                 target_seq_len = 25
                 total_frames = source_seq_len + target_seq_len
-                batch_size = 8
+                batch_size = int(test_manner)
                 SEED = 1234567890
                 rng = np.random.RandomState(SEED)
                 for _ in range(batch_size):
@@ -564,7 +564,7 @@ def expmap2quat_torch(exp):
     return q
 
 
-def expmap2rotmat_torch(r, device="cuda:1"):
+def expmap2rotmat_torch(r, device="cuda:0"):
     """
     Converts expmap matrix to rotation
     batch pytorch version ported from the corresponding method above

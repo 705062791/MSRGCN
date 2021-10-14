@@ -115,12 +115,20 @@ class H36MRunner():
                                               ('p12', 'p7', self.cfg.Index127),
                                               ('p7', 'p4', self.cfg.Index74)], test_manner=self.cfg.test_manner, global_max=self.global_max, global_min=self.global_min, device=self.cfg.device, debug_step=debug_step)
 
+            # self.test_loader[act] = DataLoader(
+            #     dataset=test_dataset,
+            #     batch_size=self.cfg.test_batch_size,
+            #     shuffle=False,
+            #     num_workers=self.cfg.num_works,
+            #     pin_memory=True)
+
             self.test_loader[act] = DataLoader(
                 dataset=test_dataset,
-                batch_size=self.cfg.test_batch_size,
+                batch_size=1,
                 shuffle=False,
                 num_workers=self.cfg.num_works,
                 pin_memory=True)
+
             print(">>> test {} data {}".format(act, test_dataset.gt_all_scales['p32'].shape[0]))
 
         self.summary = SummaryWriter(self.cfg.ckpt_dir)
@@ -192,48 +200,61 @@ class H36MRunner():
         frame_ids = self.cfg.frame_ids
         total_loss = np.zeros((len(define_actions("all")), len(frame_ids)))
 
-        for act_idx, act in enumerate(define_actions("all")):
-            count = 0
+        import h5py
+        with h5py.File('MSG_10_25_256.H5', 'a') as hf:
+            for act_idx, act in enumerate(define_actions("all")):
+                count = 0
 
-            for i, (inputs, gts) in enumerate(self.test_loader[act]):
-                b, cv, t_len = inputs[list(inputs.keys())[0]].shape
-                for k in inputs:
-                    inputs[k] = inputs[k].float().cuda(non_blocking=True, device=self.cfg.device)
-                    gts[k] = gts[k].float().cuda(non_blocking=True, device=self.cfg.device)
-                with torch.no_grad():
-                    outputs = self.model(inputs)
-                    # 反 Norm
-                    for k in outputs:
-                        outputs[k] = (outputs[k] + 1) / 2
-                        outputs[k] = outputs[k] * (self.global_max - self.global_min) + self.global_min
+                for i, (inputs, gts) in enumerate(self.test_loader[act]):
+                    b, cv, t_len = inputs[list(inputs.keys())[0]].shape
+                    for k in inputs:
+                        inputs[k] = inputs[k].float().cuda(non_blocking=True, device=self.cfg.device)
+                        gts[k] = gts[k].float().cuda(non_blocking=True, device=self.cfg.device)
+                    with torch.no_grad():
+                        outputs = self.model(inputs)
+                        # 反 Norm
+                        for k in outputs:
+                            outputs[k] = (outputs[k] + 1) / 2
+                            outputs[k] = outputs[k] * (self.global_max - self.global_min) + self.global_min
 
-                        # 回转空间
-                        outputs[k] = reverse_dct_torch(outputs[k], self.i_dct_m, self.cfg.seq_len)
+                            # 回转空间
+                            outputs[k] = reverse_dct_torch(outputs[k], self.i_dct_m, self.cfg.seq_len)
 
-                    # 开始计算
-                    mygt = gts['p32'].view(-1, self.cfg.origin_noden, 3, self.cfg.seq_len).clone()
-                    myout = outputs['p22'].view(-1, self.cfg.final_out_noden, 3, self.cfg.seq_len)
-                    mygt[:, self.cfg.dim_used_3d, :, :] = myout
-                    mygt[:, self.cfg.dim_repeat_32, :, :] = myout[:, self.cfg.dim_repeat_22, :, :]
-                    mygt = mygt.view(-1, self.cfg.origin_noden*3, self.cfg.seq_len)
+                        # 开始计算
+                        mygt = gts['p32'].view(-1, self.cfg.origin_noden, 3, self.cfg.seq_len).clone()
+                        myout = outputs['p22'].view(-1, self.cfg.final_out_noden, 3, self.cfg.seq_len)
+                        mygt[:, self.cfg.dim_used_3d, :, :] = myout
+                        mygt[:, self.cfg.dim_repeat_32, :, :] = myout[:, self.cfg.dim_repeat_22, :, :]
+                        mygt = mygt.view(-1, self.cfg.origin_noden*3, self.cfg.seq_len)
 
-                    loss = L2NormLoss_test(gts['p32'][:, :, self.cfg.input_n:], mygt[:, :, self.cfg.input_n:], self.cfg.frame_ids)
-                    total_loss[act_idx] += loss
-                    # count += 1
-                    count += mygt.shape[0]
-                    # ************ 画图
-                    if act_idx == 0 and i == 0:
-                        pred_seq = outputs['p22'].cpu().data.numpy()[0].reshape(self.cfg.final_out_noden, 3,
-                                                                                self.cfg.seq_len)
-                        gt_seq = gts['p22'].cpu().data.numpy()[0].reshape(self.cfg.final_out_noden, 3, self.cfg.seq_len)
-                        for t in range(self.cfg.seq_len):
-                            draw_pic_gt_pred(gt_seq[:, :, t], pred_seq[:, :, t], self.cfg.I22_plot, self.cfg.J22_plot,
-                                             self.cfg.LR22_plot,
-                                             os.path.join(self.cfg.ckpt_dir, "images", f"{epoch}_{act}_{t}.png"))
+                        save_pred = myout.squeeze()
+                        save_gt = gts['p32'].squeeze()
 
-            total_loss[act_idx] /= count
-            for fidx, frame in enumerate(frame_ids):
-                self.summary.add_scalar(f"Test/{act}/{frame}", total_loss[act_idx][fidx], epoch)
+                        # Save conditioning ground truth
+                        node_name = 'expmap/gt/{1}_{0}'.format(i, act)
+                        hf.create_dataset(node_name, data=save_gt)
+                        # Save prediction
+                        node_name = 'expmap/preds/{1}_{0}'.format(i, act)
+                        hf.create_dataset(node_name, data=save_pred)
+
+                        #[b,92,35]
+                        loss = L2NormLoss_test(gts['p32'][:, :, self.cfg.input_n:], mygt[:, :, self.cfg.input_n:], self.cfg.frame_ids)
+                        total_loss[act_idx] += loss
+                        # count += 1
+                        count += mygt.shape[0]
+                        # ************ 画图
+                        if act_idx == 0 and i == 0:
+                            pred_seq = outputs['p22'].cpu().data.numpy()[0].reshape(self.cfg.final_out_noden, 3,
+                                                                                    self.cfg.seq_len)
+                            gt_seq = gts['p22'].cpu().data.numpy()[0].reshape(self.cfg.final_out_noden, 3, self.cfg.seq_len)
+                            for t in range(self.cfg.seq_len):
+                                draw_pic_gt_pred(gt_seq[:, :, t], pred_seq[:, :, t], self.cfg.I22_plot, self.cfg.J22_plot,
+                                                 self.cfg.LR22_plot,
+                                                 os.path.join(self.cfg.ckpt_dir, "images", f"{epoch}_{act}_{t}.png"))
+
+                total_loss[act_idx] /= count
+                for fidx, frame in enumerate(frame_ids):
+                    self.summary.add_scalar(f"Test/{act}/{frame}", total_loss[act_idx][fidx], epoch)
 
         self.summary.add_scalar("Test/average", np.mean(total_loss), epoch)
         for fidx, frame in enumerate(frame_ids):

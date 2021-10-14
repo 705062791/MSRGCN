@@ -132,7 +132,7 @@ class Config():
         if self.exp_name == "h36m":
             self.base_data_dir = os.path.join("/mnt/hdd4T/mtz_home/data/dataset/")
         elif self.exp_name == "cmu":
-            self.base_data_dir = os.path.join("/mnt/hdd4T/mtz_home/data/cmu_mocap")
+            self.base_data_dir = os.path.join("/media/mtz/076f660b-b7de-4646-833c-0b7466f35185/data_set/cmu_mocap")
 
 
 
