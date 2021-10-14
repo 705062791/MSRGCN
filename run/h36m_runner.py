@@ -227,7 +227,7 @@ class H36MRunner():
                         mygt[:, self.cfg.dim_repeat_32, :, :] = myout[:, self.cfg.dim_repeat_22, :, :]
                         mygt = mygt.view(-1, self.cfg.origin_noden*3, self.cfg.seq_len)
 
-                        save_pred = myout.squeeze().detach().cpu().numpy()
+                        save_pred = mygt.squeeze().detach().cpu().numpy()
                         save_gt = gts['p32'].squeeze().detach().cpu().numpy()
 
                         # Save conditioning ground truth
